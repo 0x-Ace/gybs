@@ -5,173 +5,217 @@
   <title>إدارة مشاريع الجبس</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-6">
-  <div class="max-w-6xl mx-auto space-y-6">
+<body class="bg-gray-50 p-6">
+<div class="max-w-6xl mx-auto space-y-6">
+  <h1 class="text-3xl font-bold text-center text-blue-800">📋 إدارة مشاريع الجبس</h1>
 
-    <!-- العنوان -->
-    <h1 class="text-3xl font-bold text-center text-blue-600">📋 إدارة مشاريع الجبس</h1>
-
-    <!-- إضافة مشروع -->
-    <div class="bg-white shadow p-4 rounded">
-      <h2 class="text-xl font-semibold mb-2">➕ إضافة مشروع جديد</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <input id="projectName" type="text" placeholder="اسم المشروع" class="border p-2 rounded">
-        <input id="startDate" type="date" class="border p-2 rounded">
-      </div>
-      <button onclick="addProject()" class="bg-blue-500 text-white px-4 py-2 rounded mt-3">إضافة مشروع</button>
+  <!-- إضافة مشروع -->
+  <div class="bg-white shadow-sm p-4 rounded">
+    <h2 class="text-xl font-semibold mb-2 text-blue-700">➕ إضافة مشروع جديد</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <input id="projectName" type="text" placeholder="اسم المشروع" class="border p-2 rounded">
+      <input id="startDate" type="date" class="border p-2 rounded">
     </div>
-
-    <!-- مكان المشاريع -->
-    <div id="projectsContainer" class="space-y-6"></div>
+    <button onclick="addProject()" class="bg-blue-300 text-blue-900 px-4 py-2 rounded mt-3 hover:bg-blue-400">إضافة مشروع</button>
   </div>
 
-  <script>
-    let projects = JSON.parse(localStorage.getItem("projects")) || [];
+  <!-- المشاريع -->
+  <div id="projectsContainer" class="space-y-6"></div>
+</div>
 
-    function saveProjects() {
-      localStorage.setItem("projects", JSON.stringify(projects));
-      renderProjects();
-    }
+<script>
+let projects = JSON.parse(localStorage.getItem("projects")) || [];
 
-    function addProject() {
-      const name = document.getElementById("projectName").value;
-      const date = document.getElementById("startDate").value;
-      if (!name || !date) return alert("⚠️ أدخل اسم المشروع وتاريخ البداية");
+function saveProjects() {
+  localStorage.setItem("projects", JSON.stringify(projects));
+  renderProjects();
+}
 
-      projects.push({ id: Date.now(), name, date, materials: [], workers: [] });
+function addProject() {
+  const name = document.getElementById("projectName").value;
+  const date = document.getElementById("startDate").value;
+  if (!name || !date) return alert("⚠️ أدخل اسم المشروع وتاريخ البداية");
+  projects.push({ id: Date.now(), name, date, materials: [], workers: [] });
+  document.getElementById("projectName").value = "";
+  document.getElementById("startDate").value = "";
+  saveProjects();
+}
 
-      document.getElementById("projectName").value = "";
-      document.getElementById("startDate").value = "";
-      saveProjects();
-    }
+function deleteProject(id) {
+  if (confirm("هل أنت متأكد من حذف المشروع؟")) {
+    projects = projects.filter(p => p.id !== id);
+    saveProjects();
+  }
+}
 
-    function deleteProject(id) {
-      if (confirm("هل أنت متأكد من حذف المشروع؟")) {
-        projects = projects.filter(p => p.id !== id);
-        saveProjects();
-      }
-    }
+function addMaterial(pid) {
+  const pname = document.getElementById(`mName-${pid}`).value;
+  const price = +document.getElementById(`mPrice-${pid}`).value;
+  const qty = +document.getElementById(`mQty-${pid}`).value;
+  if (!pname || !price || !qty) return alert("⚠️ أدخل بيانات الخامة كاملة");
+  const project = projects.find(p => p.id === pid);
+  project.materials.push({ id: Date.now(), name: pname, price, qty });
+  document.getElementById(`mName-${pid}`).value = "";
+  document.getElementById(`mPrice-${pid}`).value = "";
+  document.getElementById(`mQty-${pid}`).value = "";
+  saveProjects();
+}
 
-    function addMaterial(pid) {
-      const pname = document.getElementById(`mName-${pid}`).value;
-      const price = +document.getElementById(`mPrice-${pid}`).value;
-      const qty = +document.getElementById(`mQty-${pid}`).value;
-      if (!pname || !price || !qty) return alert("⚠️ أدخل بيانات الخامة كاملة");
+function editMaterial(pid, mid, row) {
+  const project = projects.find(p => p.id === pid);
+  const mat = project.materials.find(m => m.id === mid);
+  row.innerHTML = `
+    <td class="border p-2"><input id="editMName-${mid}" class="border p-1 w-full" value="${mat.name}"></td>
+    <td class="border p-2"><input id="editMPrice-${mid}" type="number" class="border p-1 w-full" value="${mat.price}"></td>
+    <td class="border p-2"><input id="editMQty-${mid}" type="number" class="border p-1 w-full" value="${mat.qty}"></td>
+    <td class="border p-2">${mat.price * mat.qty}</td>
+    <td class="border p-2 space-x-1">
+      <button class="bg-green-200 text-green-900 px-2 py-1 rounded hover:bg-green-300" onclick="saveMaterial(${pid},${mid},this.parentElement.parentElement)">💾 حفظ</button>
+      <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteMaterial(${pid},${mid})">🗑 حذف</button>
+    </td>
+  `;
+}
 
-      const project = projects.find(p => p.id === pid);
-      project.materials.push({ name: pname, price, qty });
-      saveProjects();
-    }
+function saveMaterial(pid, mid, row) {
+  const project = projects.find(p => p.id === pid);
+  const mat = project.materials.find(m => m.id === mid);
+  mat.name = document.getElementById(`editMName-${mid}`).value;
+  mat.price = +document.getElementById(`editMPrice-${mid}`).value;
+  mat.qty = +document.getElementById(`editMQty-${mid}`).value;
+  saveProjects();
+}
 
-    function addWorker(pid) {
-      const wname = document.getElementById(`wName-${pid}`).value;
-      const daily = +document.getElementById(`wDaily-${pid}`).value;
-      const paid = +document.getElementById(`wPaid-${pid}`).value;
-      if (!wname || !daily) return alert("⚠️ أدخل بيانات العامل كاملة");
+function deleteMaterial(pid, mid) {
+  const project = projects.find(p => p.id === pid);
+  project.materials = project.materials.filter(m => m.id !== mid);
+  saveProjects();
+}
 
-      const project = projects.find(p => p.id === pid);
-      project.workers.push({ name: wname, daily, paid });
-      saveProjects();
-    }
+function addWorker(pid) {
+  const wname = document.getElementById(`wName-${pid}`).value;
+  const daily = +document.getElementById(`wDaily-${pid}`).value;
+  const paid = +document.getElementById(`wPaid-${pid}`).value;
+  if (!wname || !daily) return alert("⚠️ أدخل بيانات العامل كاملة");
+  const project = projects.find(p => p.id === pid);
+  project.workers.push({ id: Date.now(), name: wname, daily, paid });
+  document.getElementById(`wName-${pid}`).value = "";
+  document.getElementById(`wDaily-${pid}`).value = "";
+  document.getElementById(`wPaid-${pid}`).value = "";
+  saveProjects();
+}
 
-    function renderProjects() {
-      const container = document.getElementById("projectsContainer");
-      container.innerHTML = "";
-      projects.forEach(p => {
-        const totalMaterials = p.materials.reduce((sum, m) => sum + m.price * m.qty, 0);
-        const totalWorkers = p.workers.reduce((sum, w) => sum + w.paid, 0);
+function editWorker(pid, wid, row) {
+  const project = projects.find(p => p.id === pid);
+  const w = project.workers.find(wk => wk.id === wid);
+  row.innerHTML = `
+    <td class="border p-2"><input id="editWName-${wid}" class="border p-1 w-full" value="${w.name}"></td>
+    <td class="border p-2"><input id="editWDaily-${wid}" type="number" class="border p-1 w-full" value="${w.daily}"></td>
+    <td class="border p-2"><input id="editWPaid-${wid}" type="number" class="border p-1 w-full" value="${w.paid}"></td>
+    <td class="border p-2">${w.daily - w.paid}</td>
+    <td class="border p-2 space-x-1">
+      <button class="bg-green-200 text-green-900 px-2 py-1 rounded hover:bg-green-300" onclick="saveWorker(${pid},${wid},this.parentElement.parentElement)">💾 حفظ</button>
+      <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteWorker(${pid},${wid})">🗑 حذف</button>
+    </td>
+  `;
+}
 
-        const div = document.createElement("div");
-        div.className = "bg-white shadow p-4 rounded";
+function saveWorker(pid, wid, row) {
+  const project = projects.find(p => p.id === pid);
+  const w = project.workers.find(wk => wk.id === wid);
+  w.name = document.getElementById(`editWName-${wid}`).value;
+  w.daily = +document.getElementById(`editWDaily-${wid}`).value;
+  w.paid = +document.getElementById(`editWPaid-${wid}`).value;
+  saveProjects();
+}
 
-        div.innerHTML = `
-          <div class="flex justify-between items-center mb-3">
-            <h2 class="text-2xl font-semibold text-blue-700">${p.name} <span class="text-gray-500 text-sm">(من ${p.date})</span></h2>
-            <button onclick="deleteProject(${p.id})" class="bg-red-500 text-white px-3 py-1 rounded">🗑 حذف</button>
-          </div>
+function deleteWorker(pid, wid) {
+  const project = projects.find(p => p.id === pid);
+  project.workers = project.workers.filter(w => w.id !== wid);
+  saveProjects();
+}
 
-          <!-- جدول الخامات -->
-          <h3 class="font-semibold mb-1">الخامات:</h3>
-          <table class="w-full border mb-3">
-            <thead class="bg-gray-200">
-              <tr>
-                <th class="border p-2">الخامة</th>
-                <th class="border p-2">السعر</th>
-                <th class="border p-2">الكمية</th>
-                <th class="border p-2">الإجمالي</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${p.materials.map(m => `
-                <tr>
-                  <td class="border p-2">${m.name}</td>
-                  <td class="border p-2">${m.price}</td>
-                  <td class="border p-2">${m.qty}</td>
-                  <td class="border p-2">${m.price*m.qty}</td>
-                </tr>`).join("")}
-              <tr>
-                <td><input id="mName-${p.id}" class="border p-1 w-full" placeholder="الخامة"></td>
-                <td><input id="mPrice-${p.id}" type="number" class="border p-1 w-full" placeholder="السعر"></td>
-                <td><input id="mQty-${p.id}" type="number" class="border p-1 w-full" placeholder="الكمية"></td>
-                <td><button onclick="addMaterial(${p.id})" class="bg-green-500 text-white px-2 py-1 rounded">إضافة</button></td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="font-bold">إجمالي الخامات: ${totalMaterials} ج.م</p>
+function renderProjects() {
+  const container = document.getElementById("projectsContainer");
+  container.innerHTML = "";
+  projects.forEach(p => {
+    const totalMaterials = p.materials.reduce((sum,m)=>sum+m.price*m.qty,0);
+    const totalWorkers = p.workers.reduce((sum,w)=>sum+w.paid,0);
 
-          <!-- جدول العمال -->
-          <h3 class="font-semibold mt-4 mb-1">العمال:</h3>
-          <table class="w-full border mb-3">
-            <thead class="bg-gray-200">
-              <tr>
-                <th class="border p-2">اسم العامل</th>
-                <th class="border p-2">اليومية</th>
-                <th class="border p-2">المدفوع</th>
-                <th class="border p-2">الباقي</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${p.workers.map(w => `
-                <tr>
-                  <td class="border p-2">${w.name}</td>
-                  <td class="border p-2">${w.daily}</td>
-                  <td class="border p-2">${w.paid}</td>
-                  <td class="border p-2">${w.daily - w.paid}</td>
-                </tr>`).join("")}
-              <tr>
-                <td><input id="wName-${p.id}" class="border p-1 w-full" placeholder="اسم العامل"></td>
-                <td><input id="wDaily-${p.id}" type="number" class="border p-1 w-full" placeholder="اليومية"></td>
-                <td><input id="wPaid-${p.id}" type="number" class="border p-1 w-full" placeholder="المدفوع"></td>
-                <td><button onclick="addWorker(${p.id})" class="bg-purple-500 text-white px-2 py-1 rounded">إضافة</button></td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="font-bold">إجمالي المدفوع للعمال: ${totalWorkers} ج.م</p>
+    const div = document.createElement("div");
+    div.className="bg-white shadow-sm p-4 rounded";
 
-          <hr class="my-3">
-          <p class="text-lg font-bold text-gray-800">💰 التكلفة الكلية: ${totalMaterials + totalWorkers} ج.م</p>
-        `;
-        container.appendChild(div);
-      });
-    }
+    const header=document.createElement("div");
+    header.className="flex justify-between items-center mb-3";
+    header.innerHTML=`<h2 class="text-2xl font-semibold text-blue-800">${p.name} <span class="text-gray-500 text-sm">(من ${p.date})</span></h2>
+      <button onclick="deleteProject(${p.id})" class="bg-red-200 text-red-900 px-3 py-1 rounded hover:bg-red-300">🗑 حذف</button>`;
+    div.appendChild(header);
 
-    renderProjects();
-  </script>
+    // جدول الخامات
+    const matTable=document.createElement("table");
+    matTable.className="w-full border mb-3";
+    let matHTML=`<thead class="bg-gray-100"><tr>
+      <th class="border p-2">الخامة</th><th class="border p-2">السعر</th><th class="border p-2">الكمية</th><th class="border p-2">الإجمالي</th><th class="border p-2">الإجراءات</th>
+    </tr></thead><tbody>`;
+    p.materials.forEach(m=>{
+      matHTML+=`<tr>
+        <td class="border p-2">${m.name}</td>
+        <td class="border p-2">${m.price}</td>
+        <td class="border p-2">${m.qty}</td>
+        <td class="border p-2">${m.price*m.qty}</td>
+        <td class="border p-2 space-x-1">
+          <button class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300" onclick="editMaterial(${p.id},${m.id},this.parentElement.parentElement)">✏ تعديل</button>
+          <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteMaterial(${p.id},${m.id})">🗑 حذف</button>
+        </td>
+      </tr>`;
+    });
+    matHTML+=`<tr>
+      <td><input id="mName-${p.id}" class="border p-1 w-full" placeholder="الخامة"></td>
+      <td><input id="mPrice-${p.id}" type="number" class="border p-1 w-full" placeholder="السعر"></td>
+      <td><input id="mQty-${p.id}" type="number" class="border p-1 w-full" placeholder="الكمية"></td>
+      <td><button onclick="addMaterial(${p.id})" class="bg-green-200 text-green-900 px-2 py-1 rounded hover:bg-green-300">إضافة</button></td>
+      <td></td>
+    </tr></tbody>`;
+    matTable.innerHTML=matHTML;
+    div.appendChild(matTable);
+    div.appendChild(Object.assign(document.createElement("p"),{className:"font-bold mb-4",textContent:`إجمالي الخامات: ${totalMaterials} ج.م`}));
 
-  <!-- Footer -->
-   <br>
-   <br>
-   <br>
-<footer style="background-color:#333; color:white; text-align:center; padding:9px 0; font-family:Arial, sans-serif;">
-    <div>
-        <p>&copy; 2025 0x-ACE||Bedeir Rabea</p>
-        <p>
-            <a href="#" style="color:white; margin:0 5px; text-decoration:none;">Facebook</a> |
-            <a href="#" style="color:white; margin:0 5px; text-decoration:none;">Twitter</a> |
-            <a href="#" style="color:white; margin:0 5px; text-decoration:none;">Instagram</a>
-        </p>
-    </div>
-</footer>
+    // جدول العمال
+    const workTable=document.createElement("table");
+    workTable.className="w-full border mb-3";
+    let workHTML=`<thead class="bg-gray-100"><tr>
+      <th class="border p-2">العامل</th><th class="border p-2">اليومية</th><th class="border p-2">المدفوع</th><th class="border p-2">الباقي</th><th class="border p-2">الإجراءات</th>
+    </tr></thead><tbody>`;
+    p.workers.forEach(w=>{
+      workHTML+=`<tr>
+        <td class="border p-2">${w.name}</td>
+        <td class="border p-2">${w.daily}</td>
+        <td class="border p-2">${w.paid}</td>
+        <td class="border p-2">${w.daily-w.paid}</td>
+        <td class="border p-2 space-x-1">
+          <button class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300" onclick="editWorker(${p.id},${w.id},this.parentElement.parentElement)">✏ تعديل</button>
+          <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteWorker(${p.id},${w.id})">🗑 حذف</button>
+        </td>
+      </tr>`;
+    });
+    workHTML+=`<tr>
+      <td><input id="wName-${p.id}" class="border p-1 w-full" placeholder="اسم العامل"></td>
+      <td><input id="wDaily-${p.id}" type="number" class="border p-1 w-full" placeholder="اليومية"></td>
+      <td><input id="wPaid-${p.id}" type="number" class="border p-1 w-full" placeholder="المدفوع"></td>
+      <td><button onclick="addWorker(${p.id})" class="bg-purple-200 text-purple-900 px-2 py-1 rounded hover:bg-purple-300">إضافة</button></td>
+      <td></td>
+    </tr></tbody>`;
+    workTable.innerHTML=workHTML;
+    div.appendChild(workTable);
+    div.appendChild(Object.assign(document.createElement("p"),{className:"font-bold",textContent:`إجمالي المدفوع للعمال: ${totalWorkers} ج.م`}));
 
+    div.appendChild(Object.assign(document.createElement("hr"),{className:"my-3"}));
+    div.appendChild(Object.assign(document.createElement("p"),{className:"text-lg font-bold text-gray-800",textContent:`💰 التكلفة الكلية: ${totalMaterials + totalWorkers} ج.م`}));
+
+    container.appendChild(div);
+  });
+}
+
+renderProjects();
+</script>
 </body>
 </html>

@@ -34,8 +34,15 @@ function saveProjects() {
 function addProject() {
   const name = document.getElementById("projectName").value;
   const date = document.getElementById("startDate").value;
-  // if (!name || !date) return alert("⚠️ أدخل اسم المشروع وتاريخ البداية");
-  projects.push({ id: Date.now(), name, date, notes: '', materials: [], workers: [] });
+  projects.push({ 
+    id: Date.now(), 
+    name, 
+    date, 
+    notes: '', 
+    materials: [], 
+    workers: [], 
+    received: 0   // 🆕 المبلغ المستلم
+  });
   document.getElementById("projectName").value = "";
   document.getElementById("startDate").value = "";
   saveProjects();
@@ -47,8 +54,6 @@ function deleteProject(id) {
     saveProjects();
   }
 }
-
-
 
 // ---------- المواد ----------
 function addMaterial(pid) {
@@ -142,6 +147,17 @@ function deleteWorker(pid, wid) {
   saveProjects();
 }
 
+// ---------- المبلغ المستلم ----------
+function updateReceived(pid, value) {
+  const project = projects.find(p => p.id === pid);
+  project.received = +value || 0;
+}
+
+function saveReceived(pid, input) {
+  updateReceived(pid, input.value);
+  saveProjects(); // الحفظ عند الخروج من الإنبت أو Enter
+}
+
 // ---------- عرض المشاريع ----------
 function renderProjects() {
   const container = document.getElementById("projectsContainer");
@@ -149,6 +165,8 @@ function renderProjects() {
   projects.forEach(p => {
     const totalMaterials = p.materials.reduce((sum,m)=>sum+m.price*m.qty,0);
     const totalWorkers = p.workers.reduce((sum,w)=>sum+w.paid,0);
+    const totalCost = totalMaterials + totalWorkers;
+    const profit = p.received - totalCost;
 
     const div = document.createElement("div");
     div.className="bg-white shadow-sm p-4 rounded";
@@ -219,8 +237,22 @@ function renderProjects() {
     div.appendChild(workTable);
     div.appendChild(Object.assign(document.createElement("p"),{className:"font-bold",textContent:`إجمالي المدفوع للعمال: ${totalWorkers} ج.م`}));
 
+    // 🆕 خانة المبلغ المستلم
+    const receivedInput=document.createElement("div");
+    receivedInput.className="my-3";
+    receivedInput.innerHTML=`
+      <label class="font-semibold text-gray-700">💵 المبلغ المستلم: </label>
+      <input type="number" value="${p.received}" 
+             oninput="updateReceived(${p.id},this.value)" 
+             onblur="saveReceived(${p.id},this)" 
+             onkeydown="if(event.key==='Enter'){saveReceived(${p.id},this)}"
+             class="border p-1 rounded w-40"> ج.م
+    `;
+    div.appendChild(receivedInput);
+
     div.appendChild(Object.assign(document.createElement("hr"),{className:"my-3"}));
-    div.appendChild(Object.assign(document.createElement("p"),{className:"text-lg font-bold text-gray-800",textContent:`💰 التكلفة الكلية: ${totalMaterials + totalWorkers} ج.م`}));
+    div.appendChild(Object.assign(document.createElement("p"),{className:"text-lg font-bold text-gray-800",textContent:` التكلفة الكلية: ${totalCost} ج.م`}));
+    div.appendChild(Object.assign(document.createElement("p"),{className:`text-lg font-bold ${profit>=0 ? 'text-green-600' : 'text-red-600'}`,textContent:` صافي الأرباح: ${profit} ج.م`}));
 
     container.appendChild(div);
   });
@@ -228,12 +260,9 @@ function renderProjects() {
 
 renderProjects();
 </script>
-</body>    <br>
-    <hr>
+</body>
+<br><hr>
 <footer style="background-color:#333; color:white; text-align:center; font-family:Arial, sans-serif;">
-
-
-      <p>&copy; 2025 0x-ACE||Bedeir Rabea</p>
-
+  <p>&copy; 2025 0x-ACE||Bedeir Rabea</p>
 </footer>
 </html>

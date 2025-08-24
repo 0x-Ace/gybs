@@ -34,8 +34,8 @@ function saveProjects() {
 function addProject() {
   const name = document.getElementById("projectName").value;
   const date = document.getElementById("startDate").value;
-  if (!name || !date) return alert("⚠️ أدخل اسم المشروع وتاريخ البداية");
-  projects.push({ id: Date.now(), name, date, materials: [], workers: [] });
+  // if (!name || !date) return alert("⚠️ أدخل اسم المشروع وتاريخ البداية");
+  projects.push({ id: Date.now(), name, date, notes: '', materials: [], workers: [] });
   document.getElementById("projectName").value = "";
   document.getElementById("startDate").value = "";
   saveProjects();
@@ -48,6 +48,9 @@ function deleteProject(id) {
   }
 }
 
+
+
+// ---------- المواد ----------
 function addMaterial(pid) {
   const pname = document.getElementById(`mName-${pid}`).value;
   const price = +document.getElementById(`mPrice-${pid}`).value;
@@ -71,7 +74,7 @@ function editMaterial(pid, mid, row) {
     <td class="border p-2">${mat.price * mat.qty}</td>
     <td class="border p-2 space-x-1">
       <button class="bg-green-200 text-green-900 px-2 py-1 rounded hover:bg-green-300" onclick="saveMaterial(${pid},${mid},this.parentElement.parentElement)">💾 حفظ</button>
-      <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteMaterial(${pid},${mid})">🗑 حذف</button>
+      <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteMaterial(${pid},${mid})"> حذف</button>
     </td>
   `;
 }
@@ -91,15 +94,18 @@ function deleteMaterial(pid, mid) {
   saveProjects();
 }
 
+// ---------- العمال ----------
 function addWorker(pid) {
   const wname = document.getElementById(`wName-${pid}`).value;
   const daily = +document.getElementById(`wDaily-${pid}`).value;
-  const paid = +document.getElementById(`wPaid-${pid}`).value;
-  if (!wname || !daily) return alert("⚠️ أدخل بيانات العامل كاملة");
+  const days = +document.getElementById(`wDays-${pid}`).value;
+  const paid = +document.getElementById(`wPaid-${pid}`).value || 0;
+  if (!wname || !daily || !days) return alert("⚠️ أدخل بيانات العامل كاملة");
   const project = projects.find(p => p.id === pid);
-  project.workers.push({ id: Date.now(), name: wname, daily, paid });
+  project.workers.push({ id: Date.now(), name: wname, daily, days, paid });
   document.getElementById(`wName-${pid}`).value = "";
   document.getElementById(`wDaily-${pid}`).value = "";
+  document.getElementById(`wDays-${pid}`).value = "";
   document.getElementById(`wPaid-${pid}`).value = "";
   saveProjects();
 }
@@ -110,11 +116,12 @@ function editWorker(pid, wid, row) {
   row.innerHTML = `
     <td class="border p-2"><input id="editWName-${wid}" class="border p-1 w-full" value="${w.name}"></td>
     <td class="border p-2"><input id="editWDaily-${wid}" type="number" class="border p-1 w-full" value="${w.daily}"></td>
+    <td class="border p-2"><input id="editWDays-${wid}" type="number" class="border p-1 w-full" value="${w.days}"></td>
     <td class="border p-2"><input id="editWPaid-${wid}" type="number" class="border p-1 w-full" value="${w.paid}"></td>
-    <td class="border p-2">${w.daily - w.paid}</td>
+    <td class="border p-2">${w.daily * w.days - w.paid}</td>
     <td class="border p-2 space-x-1">
       <button class="bg-green-200 text-green-900 px-2 py-1 rounded hover:bg-green-300" onclick="saveWorker(${pid},${wid},this.parentElement.parentElement)">💾 حفظ</button>
-      <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteWorker(${pid},${wid})">🗑 حذف</button>
+      <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteWorker(${pid},${wid})"> حذف</button>
     </td>
   `;
 }
@@ -124,6 +131,7 @@ function saveWorker(pid, wid, row) {
   const w = project.workers.find(wk => wk.id === wid);
   w.name = document.getElementById(`editWName-${wid}`).value;
   w.daily = +document.getElementById(`editWDaily-${wid}`).value;
+  w.days = +document.getElementById(`editWDays-${wid}`).value;
   w.paid = +document.getElementById(`editWPaid-${wid}`).value;
   saveProjects();
 }
@@ -134,6 +142,7 @@ function deleteWorker(pid, wid) {
   saveProjects();
 }
 
+// ---------- عرض المشاريع ----------
 function renderProjects() {
   const container = document.getElementById("projectsContainer");
   container.innerHTML = "";
@@ -147,10 +156,10 @@ function renderProjects() {
     const header=document.createElement("div");
     header.className="flex justify-between items-center mb-3";
     header.innerHTML=`<h2 class="text-2xl font-semibold text-blue-800">${p.name} <span class="text-gray-500 text-sm">(من ${p.date})</span></h2>
-      <button onclick="deleteProject(${p.id})" class="bg-red-200 text-red-900 px-3 py-1 rounded hover:bg-red-300">🗑 حذف</button>`;
+      <button onclick="deleteProject(${p.id})" class="bg-red-200 text-red-900 px-3 py-1 rounded hover:bg-red-300"> حذف</button>`;
     div.appendChild(header);
 
-    // جدول الخامات
+    // جدول المواد
     const matTable=document.createElement("table");
     matTable.className="w-full border mb-3";
     let matHTML=`<thead class="bg-gray-100"><tr>
@@ -163,8 +172,8 @@ function renderProjects() {
         <td class="border p-2">${m.qty}</td>
         <td class="border p-2">${m.price*m.qty}</td>
         <td class="border p-2 space-x-1">
-          <button class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300" onclick="editMaterial(${p.id},${m.id},this.parentElement.parentElement)">✏ تعديل</button>
-          <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteMaterial(${p.id},${m.id})">🗑 حذف</button>
+          <button class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300" onclick="editMaterial(${p.id},${m.id},this.parentElement.parentElement)"> تعديل</button>
+          <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteMaterial(${p.id},${m.id})"> حذف</button>
         </td>
       </tr>`;
     });
@@ -183,23 +192,25 @@ function renderProjects() {
     const workTable=document.createElement("table");
     workTable.className="w-full border mb-3";
     let workHTML=`<thead class="bg-gray-100"><tr>
-      <th class="border p-2">العامل</th><th class="border p-2">اليومية</th><th class="border p-2">المدفوع</th><th class="border p-2">الباقي</th><th class="border p-2">الإجراءات</th>
+      <th class="border p-2">العامل</th><th class="border p-2">اليومية</th><th class="border p-2">عدد الأيام</th><th class="border p-2">المدفوع</th><th class="border p-2">الباقي</th><th class="border p-2">الإجراءات</th>
     </tr></thead><tbody>`;
     p.workers.forEach(w=>{
       workHTML+=`<tr>
         <td class="border p-2">${w.name}</td>
         <td class="border p-2">${w.daily}</td>
+        <td class="border p-2">${w.days}</td>
         <td class="border p-2">${w.paid}</td>
-        <td class="border p-2">${w.daily-w.paid}</td>
+        <td class="border p-2">${w.daily*w.days - w.paid}</td>
         <td class="border p-2 space-x-1">
-          <button class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300" onclick="editWorker(${p.id},${w.id},this.parentElement.parentElement)">✏ تعديل</button>
-          <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteWorker(${p.id},${w.id})">🗑 حذف</button>
+          <button class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300" onclick="editWorker(${p.id},${w.id},this.parentElement.parentElement)"> تعديل</button>
+          <button class="bg-red-200 text-red-900 px-2 py-1 rounded hover:bg-red-300" onclick="deleteWorker(${p.id},${w.id})"> حذف</button>
         </td>
       </tr>`;
     });
     workHTML+=`<tr>
       <td><input id="wName-${p.id}" class="border p-1 w-full" placeholder="اسم العامل"></td>
       <td><input id="wDaily-${p.id}" type="number" class="border p-1 w-full" placeholder="اليومية"></td>
+      <td><input id="wDays-${p.id}" type="number" class="border p-1 w-full" placeholder="عدد الأيام"></td>
       <td><input id="wPaid-${p.id}" type="number" class="border p-1 w-full" placeholder="المدفوع"></td>
       <td><button onclick="addWorker(${p.id})" class="bg-purple-200 text-purple-900 px-2 py-1 rounded hover:bg-purple-300">إضافة</button></td>
       <td></td>
@@ -217,5 +228,12 @@ function renderProjects() {
 
 renderProjects();
 </script>
-</body>
+</body>    <br>
+    <hr>
+<footer style="background-color:#333; color:white; text-align:center; font-family:Arial, sans-serif;">
+
+
+      <p>&copy; 2025 0x-ACE||Bedeir Rabea</p>
+
+</footer>
 </html>
